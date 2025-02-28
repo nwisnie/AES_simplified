@@ -4,9 +4,10 @@ import sys
 class AES():
     def __init__(self,key):
 
+        # bit representation irreducible polynomial used in Advanced Encryption Standard
         self.AES_modulus = BitVector(bitstring='100011011')
 
-        # table generated in gen_table.py in notes
+        # multiplicative inverses of each integer in modular base
         self.subBytesTable = [99, 124, 119, 123, 242, 107, 111, 197, 48, 1, 103, 
                               43, 254, 215, 171, 118, 202, 130, 201, 125, 250, 89, 
                               71, 240, 173, 212, 162, 175, 156, 164, 114, 192, 183, 
@@ -29,8 +30,8 @@ class AES():
                               193, 29, 158, 225, 248, 152, 17, 105, 217, 142, 148, 
                               155, 30, 135, 233, 206, 85, 40, 223, 140, 161, 137, 
                               13, 191, 230, 66, 104, 65, 153, 45, 15, 176, 84, 187, 22]
-        
-        # table generated in gen_table.py in notes
+
+        # inverse of subByteTable
         self.invSubBytesTable = [82, 9, 106, 213, 48, 54, 165, 56, 191, 64, 163, 158, 
                                  129, 243, 215, 251, 124, 227, 57, 130, 155, 47, 255, 
                                  135, 52, 142, 67, 68, 196, 222, 233, 203, 84, 123, 
@@ -67,7 +68,7 @@ class AES():
         print(self.round_keys[0].get_bitvector_in_hex())
     
     
-    # function from gen_key_schedule.py in notes
+    # G function used in gen_key_schedule_256 function
     def gee(self, keyword, round_constant, byte_sub_table):
         rotated_word = keyword.deep_copy()
         rotated_word << 8
@@ -78,8 +79,8 @@ class AES():
         round_constant = round_constant.gf_multiply_modular(BitVector(intVal = 0x02), self.AES_modulus, 8)
         return newword, round_constant
     
-    
-    # function from gen_key_schedule.py in notes
+
+    # make key schedule using a 256 bit key / snippet from Avinash Kak's gen_key_schedule.p
     def gen_key_schedule_256(self, key_bv):
         # We need 60 keywords (each keyword consists of 32 bits) in the key schedule for
         # 256 bit AES. The 256-bit AES uses the first four keywords to xor the input
@@ -105,8 +106,9 @@ class AES():
             else:
                 sys.exit("error in key scheduling algo for i = %d" % i)
         return key_words
+
     
-    # code from main in gen_key_schedule.py in notes
+    # generate round keys / snippet from Avinash Kak's gen_key_schedule.p
     def gen_round_keys(self, key_words):
         key_schedule = []
         for word in key_words:
@@ -169,7 +171,7 @@ class AES():
         x3 = BitVector(bitstring = '00000011')
         mod = self.AES_modulus
         
-        # mixing based off equations from notes
+        # mixing based off mix columns matrix
         for j in range(4):
             state_array[0][j] = old_arr[0][j].gf_multiply_modular(x2,mod,8) ^ old_arr[1][j].gf_multiply_modular(x3,mod,8) ^ old_arr[2][j] ^ old_arr[3][j]
             state_array[1][j] = old_arr[0][j] ^ old_arr[1][j].gf_multiply_modular(x2,mod,8) ^ old_arr[2][j].gf_multiply_modular(x3,mod,8) ^ old_arr[3][j]
@@ -193,7 +195,7 @@ class AES():
         x9 = BitVector(hexstring='09')
         mod = self.AES_modulus
         
-        # mixing based off equations from notes
+        # mixing based off inverse mix columns matrix
         for j in range(4):
             state_array[0][j] = old_arr[0][j].gf_multiply_modular(xE,mod,8) ^ old_arr[1][j].gf_multiply_modular(xB,mod,8) ^ old_arr[2][j].gf_multiply_modular(xD,mod,8) ^ old_arr[3][j].gf_multiply_modular(x9,mod,8) 
             state_array[1][j] = old_arr[0][j].gf_multiply_modular(x9,mod,8) ^ old_arr[1][j].gf_multiply_modular(xE,mod,8) ^ old_arr[2][j].gf_multiply_modular(xB,mod,8) ^ old_arr[3][j].gf_multiply_modular(xD,mod,8)
@@ -203,7 +205,7 @@ class AES():
         return state_array
     
     
-    # takes bv and returns corresponding state array
+    # takes BitVector and returns corresponding state array
     def bv_to_state(self, bv):
         hex_bv = bv.get_bitvector_in_hex()
         state_array = [[0 for i in range(4)] for i in range(4)]
@@ -213,7 +215,7 @@ class AES():
         return state_array
     
     
-    # takes bv and returns corresponding hexstring state array
+    # takes BitVector and returns corresponding hexstring state array
     def bv_to_hex_state(self, bv):
         hex_bv = bv.get_bitvector_in_hex()
         state_array = [[0 for i in range(4)] for i in range(4)]
@@ -223,7 +225,7 @@ class AES():
         return state_array
     
 
-    # takes state array and returns correspoding bv
+    # takes state array and returns correspoding BitVector
     def state_to_bv(self, state_array):
         ret_bv = BitVector(size = 0)
         for i in range(16):
